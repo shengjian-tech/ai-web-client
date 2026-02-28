@@ -1,0 +1,45 @@
+{
+  "name": "chrome插件v3",
+  "description": "当前是一个入门 demo",
+  "version": "0.0.1",
+  "manifest_version": 3,
+  "omnibox": { "keyword": "chrome" },
+  "permissions": [
+    "contextMenus",
+    "tabs",
+    "storage",
+    "scripting",
+    "notifications",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+  "host_permissions": [
+    "*://*/*"
+  ],
+  "action": {
+    "default_popup": "index.html"
+  },
+  
+  "icons": {
+    "16": "logo192.png",
+    "48": "logo192.png",
+    "128": "logo192.png"
+  },
+  "background": {
+    "service_worker": "./static/js/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["./static/js/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": ["<all_urls>"],
+      "resources": [".static/js/inject.js"]
+    }
+  ]
+}

@@ -1,0 +1,330 @@
+let stopFlag: boolean = false;
+
+let pddIsStart: boolean=false //是否开启自动回复
+
+let pddCustomerInfo: { [key: string]: any } = {};
+
+
+const sleep = (delay: number) => new Promise<void>((resolve) => setTimeout(resolve, delay));
+
+
+let interval_Pdd: NodeJS.Timeout | undefined;
+
+// 创建一个键盘回车
+const enterEvent: KeyboardEvent = new KeyboardEvent('keydown', {
+  bubbles: true,
+  cancelable: true,
+  keyCode: 13, // Enter key's keyCode
+  key: 'Enter',
+  code: 'Enter',
+  which: 13
+});
+
+
+
+// Fetch PDD customer info and current chat user info
+async function getCustomerInfo(): Promise<void> {
+  console.log("Intercepting request...");
+  const originalFetch = window.fetch;
+
+  const response = await originalFetch("https://mms.pinduoduo.com/janus/api/customService/queryCustomServiceInfo", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ needCustomServiceInfo: true, needMallInfo: true })
+  });
+
+  const clonedResponse = response.clone();
+  clonedResponse.json().then((data) => {
+    console.log("Intercepted fetch response data:", data);
+    pddCustomerInfo = data?.result?.mallInfoResult || {};
+  });
+}
+
+//获取pdd商家信息
+getCustomerInfo();
+
+/************************监听-start************************************ */
+
+// Send message to background script
+chrome.runtime.sendMessage({ type: "CToB" }, (response) => {
+  console.log(response.message, "color:red; font-size: 16px;");
+});
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "PToC") {
+    sendResponse("Hello, I'm content script, I received your message.");
+  } else if (request.type === "pdd_receive") {
+    const input = document.getElementById('replyTextarea') as HTMLTextAreaElement;
+    let evt = document.createEvent('HTMLEvents');
+    evt.initEvent('input', true, true);
+
+    console.log("机器人回复:", request.message);
+
+    if (request?.message?.statusCode === 500) {
+      console.log(request?.message?.message);
+      alert(request?.message?.message);
+    }
+
+    const choices = request.message.choices;
+    if (choices !== undefined && choices.length > 0) {
+      input.value = choices[0].message.content;
+      input.dispatchEvent(evt);
+      input.dispatchEvent(enterEvent);
+      input.value = "";
+      input.dispatchEvent(evt);
+    }
+
+    sendResponse("Received message from background.");
+  }else if(request.type==="pddStart"){
+      sendResponse({message:request.data})
+     //将是否开启自动回复存入缓存，避免刷新页面丢失状态
+     chrome.storage.local.set({["pddIsStart"]:request.data},()=>{
+      console.log("存储：--------",request.data)
+      
+      if(request.data){
+
+        //判断是否开启自动回复
+       waitForElement('.msg-list', (element) => {
+         console.log("DOM ...",element);
+       });
+     }else{
+       //关闭自动回复
+       console.log("准备销毁定时器：------")
+       if(interval_Pdd){
+        console.log("销毁定时器：------")
+         clearInterval(interval_Pdd);
+         observer.disconnect();
+       }
+     }
+
+
+     })
+   
+   
+  }
+   else if (request.type === "pdd1") {
+    console.log("pdd1:", request.message);
+  }
+});
+
+// Long-term connection listener
+chrome.runtime.onConnect.addListener((port) => {
+  console.log(port);
+  port.onMessage.addListener((msg) => {
+    if (port.name === "PToC") {
+      port.postMessage({
+        message: `${port.name}，hello, I'm content script, we can start the conversation.`,
+      });
+    }
+  });
+});
+
+/******************监听-end************************* */
+
+const config: MutationObserverInit = {
+    childList: true,
+    subtree: true,
+  };
+
+// MutationObserver to detect DOM changes
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    switch (mutation.type) {
+      case 'childList':
+        const chatList = document.querySelector(".msg-list");
+        if (chatList !== null) {
+      
+          const lastLi = chatList.lastElementChild;
+          console.log("childList:",lastLi)
+
+          const isVioAl = lastLi?.getElementsByClassName("content-box") as HTMLCollectionOf<Element>;
+        if (isVioAl?.length > 0) {
+            const textContent = isVioAl[0]?.textContent;
+            console.log("textContent:---",textContent)
+            const liElements = Array.from(chatList.children);
+            const buyer = liElements.slice(-2)[0] as HTMLElement;
+            if (buyer && !buyer.querySelector(".buyer-item")){
+                console.log("释放锁...");
+                stopFlag = false;
+            }
+            
+        } else{
+            if (lastLi && !lastLi.querySelector(".buyer-item")) {
+            
+                console.log("释放锁...");
+                stopFlag = false;
+              }
+
+        }
+
+        
+        }
+        console.log('子节点列表变化.');
+        break;
+      case 'attributes':
+        console.log(`Attribute ${mutation.attributeName} changed.`);
+        break;
+      case 'characterData':
+        console.log('Character data changed.');
+        break;
+    }
+  });
+});
+
+
+
+// window.addEventListener("load", () => {
+//   console.log("Start observing...");
+//   observer.observe(document.body, config);
+// });
+
+// Listen for PDD page messages
+function logEvent(event: Event): void {
+  console.log(`Event triggered: ${event.type}`);
+}
+
+async function detectChatList(elementMsg: HTMLElement): Promise<void> {
+  const elements = document.getElementsByClassName('all-chat-list group-chat');
+  console.log("All chat lists:", elements);
+
+  if (elements.length > 0) {
+    const element = elements[0];
+    const chatItems = element.querySelectorAll(".chat-item");
+    console.log("Chat users:", chatItems);
+    // 使用扩展运算符转换为数组
+  
+    for (const item of chatItems) {
+      const i = item.querySelector("i");
+      if (i) {
+        const display = window.getComputedStyle(i).display;
+        if (display !== "none") {
+          const chatUser = item.getElementsByClassName("chat-item-box transition")[0];
+
+          const userIdStr = chatUser.getAttribute("data-random");
+          const userId = userIdStr?.split("-")[0];
+            
+          //模拟点击事件 down move up缺一不可
+          const mousedownEvent = new MouseEvent('mousedown', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            button: 0,
+          });
+
+          chatUser.dispatchEvent(mousedownEvent);
+
+          const moveEvent = new MouseEvent('mousemove', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+          });
+          chatUser.dispatchEvent(moveEvent);
+
+          const upEvent = new MouseEvent('mouseup', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+          });
+          chatUser.dispatchEvent(upEvent);
+
+          await sleep(1000);
+          await getMsgList(elementMsg, userId as string);
+        }
+      }
+    }
+  }
+}
+
+async function waitForElement(selector: string, callback: (element: HTMLElement) => void): Promise<void> {
+
+
+  observer.observe(document.body, config);
+
+   interval_Pdd = setInterval(async () => {
+    console.log("监听DOM react项目...");
+    const element = document.querySelector(selector) as HTMLElement;
+    if (element) {
+      if (stopFlag) {
+        console.log("正在执行锁未释放...");
+        return;
+      }
+
+      await detectChatList(element);
+      callback(element);
+    }
+  }, 3000); // Check every 3 seconds
+}
+
+async function getMsgList(element: HTMLElement, userId: string): Promise<void> {
+
+    let buyer =null;
+  const lastLi = element.lastElementChild as HTMLElement;
+  const isVioAl = lastLi?.getElementsByClassName("content-box");
+  if (isVioAl?.length > 0) {
+    const textContent = isVioAl[0]?.textContent;
+    console.log("textContent:---",textContent)
+    // if(textContent=="您接待过此消费者，为避免插嘴、抢答，机器人已暂停接待，>>点此【立即恢复接待】<<"){
+    //    const bun= isVioAl[0].getElementsByClassName("btn")[0] as HTMLButtonElement;
+    //    bun.onclick=()=>{
+    //     console.log("点击了立即恢复接待-----")
+    //    }
+
+    
+    // }
+
+      const liElements = Array.from(element.children);
+       buyer = liElements.slice(-2)[0] as HTMLElement;
+    
+  } else {
+     buyer = lastLi.querySelector(".buyer-item")as HTMLElement ;
+  }
+
+  if (buyer) {
+    stopFlag = true;
+    const message = buyer.querySelector(".msg-content-box")?.textContent;
+    const sendButton = document.getElementsByClassName("send-btn")[0] as HTMLButtonElement;
+
+    if (sendButton) {
+      const param = { message, roomId: `${userId}${pddCustomerInfo.mallId}` };
+      chrome.runtime.sendMessage({ type: "pdd_send", message: JSON.stringify(param) }, () => {
+        console.log("User message sent.");
+      });
+    }
+  }
+}
+
+
+//************************************主入口 */
+
+//避免刷新页面丢失状态
+chrome.storage.local.get(['pddIsStart'],(value:any)=>{
+  if(value==true){
+    waitForElement('.msg-list', (element) => {
+      console.log("DOM is loading...");
+    });
+  }else{
+     if( interval_Pdd){
+      console.log("销毁定时器：------")
+        observer.disconnect();
+        clearInterval(interval_Pdd)
+     }
+  }
+})
+// Main entry point for observing the DOM
+// waitForElement('.msg-list', (element) => {
+//   console.log("DOM is loading...");
+// });
+
+setTimeout(() => {
+  if (stopFlag) {
+    stopFlag = false;
+  }
+}, 300000); // 5min强制释放
+
+
+ export {};  // 空的 export 语句
+
+

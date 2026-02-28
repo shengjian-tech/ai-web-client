@@ -1,0 +1,46 @@
+{
+  "name": "盛见客服插件",
+  "description": "盛见客服Chrome自动化插件",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "omnibox": { "keyword": "chrome" },
+  "permissions": [
+    "contextMenus",
+    "tabs",
+    "storage",
+    "scripting",
+    "notifications",
+    "webRequest",
+    "webRequestBlocking",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://*/*"
+  ],
+  "action": {
+    "default_popup": "index.html"
+  },
+  
+  "icons": {
+    "16": "shengjianlogo.png",
+    "48": "shengjianlogo.png",
+    "128": "shengjianlogo.png"
+  },
+  "background": {
+    "service_worker": "./static/js/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["./static/js/content.js","./static/js/function.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": ["<all_urls>"],
+      "resources": [".static/js/inject.js"]
+    }
+  ]
+}

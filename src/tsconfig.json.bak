@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "baseUrl": "src", // 设置 src 为 baseUrl
+    "paths": {
+      "@/*": ["*"] // 设置 @ 为 src 目录的别名
+    },
+      "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "module": "esnext",
+    "target": "es5",
+    "jsx": "react",
+    }
+  }

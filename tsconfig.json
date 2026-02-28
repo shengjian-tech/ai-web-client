@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    // "typeRoots": ["node_modules/@types", "src/types"],
+    "baseUrl": "src", // 设置 src 为 baseUrl
+    "paths": {
+      "@/*": ["*"] // 设置 @ 为 src 目录的别名
+    },
+    "target": "es2015",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    // "checkJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src"
+  ],
+  // "exclude": ["src/content/*.js", "src/content/*.mjs"]
+}

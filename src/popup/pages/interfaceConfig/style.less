@@ -1,0 +1,103 @@
+.interfaceConfig-div {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 20px 10px 20px;
+    background-color: #000000;
+    height: 100vh; /* 设置容器高度为视口高度 */
+    overflow-y: auto; /* 启用垂直滚动条 */
+
+    //header 齿轮
+    .header-main-div .right-header .shezhi-icon{
+        margin-right: 10px;
+    }
+
+    .navigation-div {
+        display: flex;
+        gap: 10px; /* 为按钮之间添加间距 */
+
+
+        .text-button {
+            color: white;
+            background-color: transparent; /* 默认背景透明 */
+            border: none; /* 移除默认边框 */
+            cursor: pointer; /* 鼠标悬停时显示指针 */
+            transition: all 0.3s ease; /* 平滑过渡效果 */
+        }
+
+        .text-button:hover {
+            /* 鼠标悬停时的样式，这里保持不变 */
+            color: white;
+            background-color: transparent;
+        }
+
+        .text-button.active {
+            color: #4dc165; /* 激活时字体颜色为深绿色 */
+            background-color: #09180d; /* 激活时背景颜色为浅绿色 */
+        }
+    }
+
+    .list-div {
+        margin-top: 10px;
+        padding: 10px;
+
+        .item-div {
+            margin-top: 8px;
+        }
+
+        span {
+            font-size: 14px;
+            color: #FFF;
+        }
+
+        input {
+            margin-top: 5px;
+            background-color: #1b1e1c;
+            color: #707271;
+        }
+
+    }
+
+    //保存配置按钮
+    .su-div{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 12px;
+
+        .start-use{
+          background-color: #00f79b;
+          color: #000;
+          border-color: #00f79b;
+          width: 230px;
+        }
+
+        .start-use:hover{
+          background-color: #ffffff;
+          color: #40a3ff;
+          border-color: #40a3ff;
+        }
+    }
+}
+
+//input框中提示字体的颜色
+.ant-input::placeholder {
+    color: #707271;
+}
+
+.con-ag-div{
+    .ant-collapse-expand-icon{
+        color: #FFFFFF !important;
+    }
+    .ant-collapse-content-box{
+        padding: 0px !important;
+    }
+    .ant-collapse-header{
+        padding: 12px 0px !important;
+    }
+}
+
+.addHearder{
+    margin-top: 6px;
+    background-color: #1B1E1C !important;
+    
+}

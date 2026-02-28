@@ -1,0 +1,149 @@
+
+let details1
+
+
+
+
+//********************************************************************************************* */
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  console.log("back接收消息",request)
+  // 接受消息
+  if (request.type === "PToB") {
+    sendResponse({ message: "接受到了popup的弹框了，goodbye" });
+  }else if(request.type === 'CToB'){
+    sendResponse({ message: "%c 你好， contentscript，我是background！！！" });
+  }else if(request.type =="pdd_send"){
+    //向后台请求拿到机器人回复
+    getAnswer( request.message)
+    sendResponse({ message: "pdd用户消息接收完毕!" });
+   
+   
+  }
+});
+
+// 长期连接 监听
+chrome.runtime.onConnect.addListener(function (port) {
+  port.onMessage.addListener(function (msg) {
+    if (port.name === "CToB")
+      port.postMessage({ message: port.name + "，你好,我们可以开始通话了" });
+  });
+});
+
+
+
+
+//获取pdd商户和当天聊天人的信息--start
+
+// async function interceptRequests() {
+//   // 劫持 fetch
+//   console.log("劫持请求111:-------")
+//   const originalFetch = window.fetch;
+  
+//   console.log("args:----")
+//   const response = await originalFetch("https://mms.pinduoduo.com/janus/api/customService/queryCustomServiceInfo",{
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",  
+//     },
+//     body: JSON.stringify(
+//       {needCustomServiceInfo: true, needMallInfo: true}
+//     ),
+//   });
+//   const clonedResponse = response.clone();
+
+//      clonedResponse.json().then((data) => {
+//       console.log("Intercepted fetch response data:", data);
+      
+//     });
+
+//   // window.fetch = async (...args) => {
+//   //   console.log("args:----")
+//   //   const response = await originalFetch(...args);
+//   //   const clonedResponse = response.clone();
+
+//   //   // 读取并处理响应内容
+//   //   clonedResponse.json().then((data) => {
+//   //     console.log("Intercepted fetch response data:", data);
+//   //     // 可以将数据发送给插件的 background.js 进行进一步处理
+//   //     chrome.runtime.sendMessage({ url: args[0], data });
+//   //   });
+//   //  console.log("劫持请求的响应结果:----",response)
+
+//   //   return response;
+//   // };
+// }
+
+//  chrome.webRequest.onCompleted.addListener((details)=>{
+
+//   if(details.url="https://mms.pinduoduo.com/janus/api/customService/queryCustomServiceInfo"){
+//     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//     if (tabs[0].id) {
+
+//       chrome.tabs.sendMessage(tabs[0].id, {type:"pdd1", message: details,abc:"111" }, (response) => {
+//         console.log("Response from content:", response);
+//       });
+
+//     }
+//   });
+//     console.log("获取用户请求:----",details)
+//     chrome.scripting.executeScript({
+//       target: { tabId: details.tabId },
+//       func: interceptRequests
+//     });
+//   }
+ 
+
+// },{urls:["https://mms.pinduoduo.com/janus/api/customService/queryCustomServiceInfo"]},[]);
+
+//获取pdd商户和当天聊天人的信息--end
+
+
+
+/**************************function********************************* */
+
+async function getAnswer(message:any){
+  console.log("getAnswer进来了-----------------------")
+  
+
+  const res= await fetch(`http://127.0.0.1:9000/ragkb/agent/chatByInput`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",  
+    },
+    body: message
+
+    })
+    const data = await res.json();
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0].id) {
+
+        chrome.tabs.sendMessage(tabs[0].id, {type:"pdd_receive", message: data,abc:"111" }, (response) => {
+            console.log("Response from content:", response);
+        });
+    }
+
+  });
+  console.log("backgroud_resp:-------",response)
+
+  return response.body
+  // const response =  fetch(`http://127.0.0.1:9000/ragkb/agent/chatByInput`, {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",  
+  //   },
+  //   body: JSON.stringify(
+  //     message
+  //   ),
+
+  // });
+  // console.log("backgroud_resp:-------",response)
+
+
+    // 发送消息到当前激活的标签页content.js
+    // chrome.tabs.sendMessage(tab.id, { greet: "pdd_receive",message:response.body }, (response) => {
+    //   console.log("Response from content script:", response);
+    // });
+
+}

@@ -1,0 +1,49 @@
+.tag-menu-div{
+    display: flex;
+    cursor: pointer;
+    margin-left: 14px;
+    margin-top: 12px;
+    margin-bottom: 15px;
+
+
+    .tag-menu-item{
+        width: 30%;
+        font-size: 14px;
+        display: flex;
+        color: #fff;
+        margin-right: 10px;
+        transition: background-color 0.3s, color 0.3s;
+
+        &.active {
+            background-color: #09180D;
+            border-radius: 2px;
+            color: #4DC165;
+
+            .i-div {
+                background-color: #38AD50;
+                border-radius: 2px;
+            }
+        }
+    }
+    .tag-menu-item:hover{
+        background-color: #09180D;
+        border-radius: 2px;
+        color: #4DC165;
+        .i-div{
+            background-color: #38AD50;
+            border-radius: 2px;
+        }
+    }
+
+}
+
+.i-div{
+    color: #FFf;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    margin-right: 6px;
+
+    
+}
+
